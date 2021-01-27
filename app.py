@@ -9,8 +9,8 @@ def index():
     if data !=None:
         A=data['A']
         V=data['V']
+        floor=data['floor']
     location=[123, 456]
-    floor="G"
     return jsonify({"x":location[0], "y": location[1], "floor": floor})
     #return jsonify({"return":data})
 
