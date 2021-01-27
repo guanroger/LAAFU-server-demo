@@ -10,6 +10,9 @@ def index():
         A=data['A']
         V=data['V']
         floor=data['floor']
+
+    else:
+        floor="G"
     location=[123, 456]
     return jsonify({"x":location[0], "y": location[1], "floor": floor})
     #return jsonify({"return":data})
