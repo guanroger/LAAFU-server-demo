@@ -134,7 +134,7 @@ def localization(json_example):
     #choose the best K RP
     #choose the nearest Q RP
     #bamdwidth b for Gaussian Kernel
-    M=20
+    M=15
     K=8
     Q=8
     b=0.02
