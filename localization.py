@@ -137,7 +137,7 @@ def localization(MAC_address, RSSI_Vector):
     #choose the best K RP
     #choose the nearest Q RP
     #bamdwidth b for Gaussian Kernel
-    M=6
+    M=3
     K=8
     Q=8
     b=0.02
