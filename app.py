@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from json import dumps
 import localization
+import get_altered_AP
 
 app = Flask(__name__)
 app.debug=True
@@ -24,12 +25,7 @@ def index():
 @app.route("/altered_ap", methods=['GET', 'POST'])
 def altered_ap():
     data=request.get_json()
-    if data !=None:
-        data_string=dumps(data)
-        location, altered_ap =localization.localization(data_string)
-    else:
-        altered_ap="No input"
-
+    altered_ap = get_altered_AP.get_altered_AP()
     return jsonify({"altered AP": altered_ap})
 
 if __name__ == "__main__":

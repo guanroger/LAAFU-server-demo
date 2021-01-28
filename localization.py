@@ -716,8 +716,22 @@ def localization(json_example):
     for i in range(len(classes[lowest_SDCM][lowest_class])):
         alter_AP.append(classes[lowest_SDCM][lowest_class][i]['MAC'])
 
+    f= open("alter_ap.txt", "r")
+    Altered_AP=[]
+    for x in f:
+        Altered_AP.append(x)
+    #print(RP_location)
+    f.close()
 
+    write_AP=[]
+    for i in range(len(alter_AP)):
+        if alter_AP[i] not in Altered_AP:
+            write_AP.append(alter_AP[i])
 
+    f= open("alter_ap.txt", "a")
+    for i in range(len(write_AP)):
+        f.write(write_AP[i])
+        f.write("\n")
         
     return final_estimation,alter_AP
 
