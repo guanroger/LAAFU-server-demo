@@ -1,4 +1,6 @@
 from flask import Flask, request, jsonify
+import localization
+
 app = Flask(__name__)
 app.debug=True
 
@@ -10,10 +12,12 @@ def index():
         A=data['A']
         V=data['V']
         floor=data['floor']
+        location=localization.localization(A,V)
+
 
     else:
-        floor="G"
-    location=[123, 456]
+        floor="A"
+        location=[123, 456]
     return jsonify({"x":location[0], "y": location[1], "floor": floor})
     #return jsonify({"return":data})
 
