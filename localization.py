@@ -4,6 +4,8 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import cycle
+import time
+import fingerprint_utils
 
 '''
 functions and class
@@ -27,7 +29,7 @@ def cosine(Fingerprint_Address, Fingerprint_F, Vi_MAC_address, Vi):
     for k in range(len(Fingerprint_Address)):
         if Fingerprint_Address[k] in Common:
             #print(Fingerprint_Address[k])
-            Fingerprint_V_Common.append(int(Fingerprint_F[k]))
+            Fingerprint_V_Common.append(float(Fingerprint_F[k]))
 
     #print(Fingerprint_V_Common)
 
@@ -48,7 +50,7 @@ def cosine(Fingerprint_Address, Fingerprint_F, Vi_MAC_address, Vi):
     #print (AdotB)
 
     for k in range (len(Fingerprint_F)):
-        ASquareSum+=math.pow(int(Fingerprint_F[k]),2)
+        ASquareSum+=math.pow(float(Fingerprint_F[k]),2)
     #print (ASquareSum)    
     
     for k in range(len(Vi)):
@@ -66,7 +68,8 @@ def distance(x1, y1, x2, y2):
 '''
 get the data from the file
 '''
-def localization(MAC_address, RSSI_Vector):
+def localization(json_example):
+    '''
     #RP location
     f= open("p_all.txt", "r")
     RP_location=[]
@@ -102,7 +105,7 @@ def localization(MAC_address, RSSI_Vector):
     #print(Fingerprint_A[0])
     #print(Fingerprint_V[0])
     f.close()
-    '''
+    
     # A(MAC address) & V(RSSI vector) from fast detection
     f=open("mac_rssi.txt","r")
     A=[]
@@ -116,13 +119,7 @@ def localization(MAC_address, RSSI_Vector):
     #print (V)
     f.close()   
     '''
-    A=[]
-    for a in MAC_address:
-        A.append(a)
-
-    V=[]
-    for v in RSSI_Vector:
-        V.append(v)
+    RP_location, Fingerprint_A, Fingerprint_V, A, V = fingerprint_utils.load_fingerprint(json_example)
     
     #print (A)
     #print (V)
@@ -137,11 +134,12 @@ def localization(MAC_address, RSSI_Vector):
     #choose the best K RP
     #choose the nearest Q RP
     #bamdwidth b for Gaussian Kernel
-    M=3
+    M=4
     K=8
     Q=8
     b=0.02
     #the max of K is the total number of fingerprint
+
 
 
     APindex=[]
@@ -180,7 +178,7 @@ def localization(MAC_address, RSSI_Vector):
             coin = random.randint(1, 2)
             if coin ==1: #if it is the head
                 one_subset.append(DetectedAP[j])
-                one_subset_RSSI.append(int(RSS[j]['RSSI']))
+                one_subset_RSSI.append(float(RSS[j]['RSSI']))
             else: #if it is not the head dont do anything
 
                 break
@@ -237,7 +235,7 @@ def localization(MAC_address, RSSI_Vector):
         for j in range(len(one_subset)):
             for k in range(len(RSS)):
                 if one_subset[j] == RSS[k].get("MAC_address"):
-                    Vi.append(int(RSS[k].get("RSSI")))
+                    Vi.append(float(RSS[k].get("RSSI")))
                     Vi_MAC_address.append( RSS[k].get("MAC_address"))
                 else:
                     Vi.append(0)
@@ -294,7 +292,7 @@ def localization(MAC_address, RSSI_Vector):
 
 
 
-
+    t1=time.time()
     #APC algorithm 
     sim=np.array([[0 for j in range(len(locations))]for i in range (len(locations))], dtype= float)
     for i in range(len(sim)):
@@ -440,7 +438,8 @@ def localization(MAC_address, RSSI_Vector):
         '''
 
     #print(location_with_centriod_id)
-
+    t2=time.time()
+    time_I= t2-t1
         
     '''
     the visulization for debugging use
@@ -534,7 +533,7 @@ def localization(MAC_address, RSSI_Vector):
             #print(Fingerprint_V[j])
             #print(Vi)
             #print(Vi_MAC_address)
-            RP=ReferencePoint(RP_location[j], Fingerprint_A[j], Fingerprint_V[j], distance(int(RP_location[j][0]), int(RP_location[j][1]), X2, Y2), 0)
+            RP=ReferencePoint(RP_location[j], Fingerprint_A[j], Fingerprint_V[j], distance(float(RP_location[j][0]), float(RP_location[j][1]), X2, Y2), 0)
             #print(RP.location)
             #print(RP.distance)
             #print(RP.weight)

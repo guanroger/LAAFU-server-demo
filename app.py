@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from json import dumps
 import localization
 
 app = Flask(__name__)
@@ -9,10 +10,9 @@ def index():
     #value = request.json['V'][1]
     data=request.get_json()
     if data !=None:
-        A=data['A']
-        V=data['V']
         floor=data['floor']
-        location=localization.localization(A,V)
+        data_string=dumps(data)
+        location=localization.localization(data_string)
 
 
     else:
