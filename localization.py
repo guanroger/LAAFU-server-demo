@@ -134,7 +134,7 @@ def localization(json_example):
     #choose the best K RP
     #choose the nearest Q RP
     #bamdwidth b for Gaussian Kernel
-    M=4
+    M=20
     K=8
     Q=8
     b=0.02
@@ -226,6 +226,7 @@ def localization(json_example):
 
 
     locations = [[0 for j in range(2)] for i in range(len(subsets))] 
+    locations_id= [i for i in range(len(subsets))]
 
     for i in range (len(subsets)):
         #get one of the subsets
@@ -475,28 +476,38 @@ def localization(json_example):
     '''
     #High average signal similarity
     cluster_centorid=[]
+    centorid_ID=[]
     for i in range(len(exemplars)):
         cluster_centorid.append(locations[exemplars[i]])
+        centorid_ID.append(locations_id[exemplars[i]])
 
     #print(cluster_centorid)
 
     clustering=[]
+    clustering_ID=[]
     for i in range(len(exemplars)):
         one_cluster=[]
+        one_cluster_ID=[]
         for j in range(len(location_with_centriod_id)):
             if location_with_centriod_id[j]==exemplars[i]:
                 one_cluster.append(locations[j])
+                one_cluster_ID.append(locations_id[j])
         clustering.append(one_cluster)
+        clustering_ID.append(one_cluster_ID)
 
-    #print(clustering)
 
     #create list if dicetionary
     cluster=[]
+    cluster_ID=[]
     for i in range(len(cluster_centorid)):
-        dummy=dict({"centorid": cluster_centorid[i], "cluster": clustering[i]})
-        cluster.append(dummy)
+        dummy1=dict({"centorid": cluster_centorid[i], "cluster": clustering[i]})
+        dummy2=dict({"centorid": centorid_ID[i], "cluster": clustering_ID[i]})
+        cluster.append(dummy1)
+        cluster_ID.append(dummy2)
 
     #print(cluster)
+    #print(cluster_ID)
+
 
     #find Q nearest location of RPs
 
@@ -544,7 +555,6 @@ def localization(json_example):
         
         #find the nearest Q RPs
 
-        totalWeight=0
         for k in range(Q):
             lowestDistance=RPs[k].distance
             for j in range(k+1,len(RPs)):
@@ -592,6 +602,7 @@ def localization(json_example):
     for i in range(len(cluster)):
         C=len(cluster[i]['cluster'])
         Vc.append( math.exp(-(1 / ( 2 * math.pow(b,2) ) ) * ( math.pow(C - Cmin, 2) )))
+        #print(type(Vc[i]))
 
     #print("Vc: ",Vc)
 
@@ -602,7 +613,111 @@ def localization(json_example):
     maximum_score_id=scores.index(max(scores))
     #the location detected in the end is the maximum score location
     final_estimation=cluster[maximum_score_id]['centorid']
+    final_estimation_ID=cluster_ID[maximum_score_id]['centorid']
     #print("final estimation:",final_estimation)
+    #print("ID :",final_estimation_ID )
+
+
+    #5.3
+    #altered ap part
+    dense_subsets=[]
+    #print(cluster[maximum_score_id]['cluster'])
+    #print(cluster_ID[maximum_score_id]['cluster'])
+    for j in range(len(cluster_ID[maximum_score_id]['cluster'])):
+        dummy=subsets[cluster_ID[maximum_score_id]['cluster'][j]]
+        dense_subsets.append(dummy)
+    #print(dense_subsets)
+
+    unique=[]
+    for i in range(len(dense_subsets)):
+        for j in range(len(dense_subsets[i])):
+            if dense_subsets[i][j] not in unique:
+                unique.append(dense_subsets[i][j])
+
+    #print(unique)
+    frequency=[0 for i in range (len(unique))]
+    for i in range(len(dense_subsets)):
+        for j in range(len(dense_subsets[i])):
+            frequency[unique.index(dense_subsets[i][j])]+=1
+
+    #print(frequency)
+
+    #make the dict
+    AP_freq=[]
+    for i in range(len(unique)):
+        dummy=dict({"MAC": unique[i], "frequency": frequency[i]})
+        AP_freq.append(dummy)
+    #print(AP_freq)
+
+    #ordered by freq
+    for i in range(len(AP_freq)):
+        min_f=AP_freq[i]['frequency']
+        for j in range(i+1,len(AP_freq)):
+            if (AP_freq[j]['frequency']<min_f):
+                    temp=AP_freq[i]
+                    AP_freq[i]=AP_freq[j]
+                    AP_freq[j]=temp
+                    lowestDistance=AP_freq[i]['frequency']
+
+    #print(AP_freq)
+
+    SDCM=np.array([0 for i in range(len(AP_freq)+1)],dtype=float)
+    SDCM_class_freq=np.array([[0 for j in range(2)]for i in range(len(AP_freq)+1)],dtype=float)
+    classes=[]
+    #range(len(AP_freq)+1)
+    for i in range(len(AP_freq)+1):
+        dummy=[]
+        class_A=[ AP_freq[j] for j in range(0,i)]
+        dummy.append(class_A)
+        f_mean_in_A=0
+        if len(class_A)!= 0:
+            f_sum_in_A=0
+            for j in range(len(class_A)):
+                f_sum_in_A+=class_A[j]['frequency']
+            f_mean_in_A=f_sum_in_A/len(class_A)
+
+
+        class_A_sum=0
+        for j in range(len(class_A)):
+            class_A_sum=math.pow((class_A[j]['frequency']-f_mean_in_A),2)
+
+        class_B=[AP_freq[j] for j in range(i,len(AP_freq))]
+        dummy.append(class_B)
+        f_mean_in_B=0
+        if len(class_B)!= 0:
+            f_sum_in_B=0
+            for j in range(len(class_B)):
+                f_sum_in_B+=class_B[j]['frequency']
+            f_mean_in_B=f_sum_in_B/len(class_B)
+
+
+        class_B_sum=0
+        for j in range(len(class_B)):
+            class_B_sum=math.pow((class_B[j]['frequency']-f_mean_in_B),2)
+                
+        #print(class_A)
+        #print(class_A_sum)
+        #print(class_B)
+        #print(class_B_sum)
+
+        SDCM[i]=class_A_sum+class_B_sum
+        SDCM_class_freq[i][0]=class_A_sum
+        SDCM_class_freq[i][1]=class_B_sum
+        classes.append(dummy)
+
+
     
-    return final_estimation
+    #print("SDCM each freq: ",SDCM_class_freq)
+
+
+    lowest_SDCM=SDCM.argmin()
+    lowest_class=SDCM[lowest_SDCM].argmin()
+    alter_AP=[]
+    for i in range(len(classes[lowest_SDCM][lowest_class])):
+        alter_AP.append(classes[lowest_SDCM][lowest_class][i]['MAC'])
+
+
+
+        
+    return final_estimation,alter_AP
 
