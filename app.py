@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify
 from json import dumps
+from flask_cors import CORS
 import localization
 import get_altered_AP
 
 app = Flask(__name__)
+cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 app.debug=True
 
 @app.route("/", methods=['GET', 'POST'])
