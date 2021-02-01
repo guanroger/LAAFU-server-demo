@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from json import dumps
+import json
 import localization
 import get_altered_AP
 
@@ -13,7 +13,7 @@ def index():
     data=request.get_json()
     if data !=None:
         floor=data['floor']
-        data_string=dumps(data)
+        data_string=json.dumps(data)
         location, altered_ap =localization.localization(data_string)
 
 
@@ -25,9 +25,15 @@ def index():
 
 @app.route("/altered_ap", methods=['GET', 'POST'])
 def altered_ap():
-    data=request.get_json()
-    altered_ap = get_altered_AP.get_altered_AP()
-    return jsonify({"altered AP": altered_ap})
+    address = request.args.get('mac')
+    if address != None:
+        data=request.get_json()
+        changed_RP, location, unchanged_RP = get_altered_AP.get_altered_AP(address)
+    else:
+        changed_RP = 'Not found' 
+        location = 'Not found'
+        unchanged_RP = 'Not found'
+    return jsonify({"data": {"altered_rp": changed_RP, "ap_position": location, "normal_rp" : unchanged_RP}})
 
 if __name__ == "__main__":
     app.run(host='127.0.0.1', port=5000)

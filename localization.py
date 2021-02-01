@@ -716,22 +716,184 @@ def localization(json_example):
     for i in range(len(classes[lowest_SDCM][lowest_class])):
         alter_AP.append(classes[lowest_SDCM][lowest_class][i]['MAC'])
 
-    f= open("alter_ap.txt", "r")
-    Altered_AP=[]
+    f=open("alter_ap.txt","r")
+    altered_ap=[] #dictionary
     for x in f:
-        Altered_AP.append(x)
-    #print(RP_location)
+        #make the list
+        altered_ap_mac=''
+        altered_RP_location=[]
+        user_location=[]
+        unaltered_RP_location=[]
+        i=0
+        for w in x.split(' '):
+            if i==0:
+                #print(w)
+                altered_ap_mac=w.replace(':','')
+
+            elif i==1:
+                #this is the altered RP location
+                cor1=w.replace('[','')
+                cor=cor1.replace(']','')
+                #print(cor)
+                for c in cor.split('),('):
+                    one_point1=c.replace('(', '')
+                    one_point=one_point1.replace(')', '')
+                    #print(one_point)
+                    corXY=[]
+                    for p in one_point.split(','):
+                        corXY.append(p)
+                    altered_RP_location.append(corXY)
+                #print(altered_RP_location)
+            
+            elif i==2:
+                #this is the altered RP location
+                cor1=w.replace('[','')
+                cor=cor1.replace(']','')
+                #print(cor)
+                for c in cor.split('),('):
+                    one_point1=c.replace('(', '')
+                    one_point=one_point1.replace(')', '')
+                    #print(one_point)
+                    corXY=[]
+                    for p in one_point.split(','):
+                        corXY.append(p)
+                    user_location.append(corXY)
+                #print(user_location)
+
+            elif i==3:
+                #this is the altered RP location
+                cor1=w.replace('[','')
+                cor2=cor1.replace('\n','')
+                cor=cor2.replace(']','')
+
+                #print(cor)
+                for c in cor.split('),('):
+                    one_point1=c.replace('(', '')
+                    one_point=one_point1.replace(')', '')
+                    #print(one_point)
+                    corXY=[]
+                    for p in one_point.split(','):
+                        corXY.append(p)
+                    unaltered_RP_location.append(corXY)
+                #print(unaltered_RP_location)
+
+            i=i+1
+        dummy=dict({"altered ap mac":altered_ap_mac, "altered RP": altered_RP_location, "User locations": user_location, "Unchanged RP": unaltered_RP_location})
+
+    altered_ap.append(dummy)
+    #print (altered_ap)
+    #print (V)
     f.close()
 
-    write_AP=[]
-    for i in range(len(alter_AP)):
-        if alter_AP[i] not in Altered_AP:
-            write_AP.append(alter_AP[i])
+    #append new data
+    #all altered ap for check
+    All_altered_ap=[]
+    for i in range(len(altered_ap)):
+        All_altered_ap.append(altered_ap[i]['altered ap mac'])
 
-    f= open("alter_ap.txt", "a")
-    for i in range(len(write_AP)):
-        f.write(write_AP[i])
-        f.write("\n")
+    for i in range(len(alter_AP)):
+        if alter_AP[i] not in All_altered_ap:
+            affected_location=[]
+            unaffected_location=[]
+            user_location=[]
+            user_location.append(final_estimation)
+            for j in range(len(Fingerprint_A)):
+                if alter_AP[i] not in Fingerprint_A[j]:
+                    unaffected_location.append(RP_location[j])
+                else:
+                    affected_location.append(RP_location[j])
+            dummy=dict({"altered ap mac":alter_AP[i], "altered RP": affected_location, "User locations": user_location, "Unchanged RP": unaffected_location})
+            altered_ap.append(dummy)
+
+        else:
+            index_of_altered_AP=All_altered_ap.index(alter_AP[i])
+            original_altered_RP=altered_ap[index_of_altered_AP]['altered RP']
+            original_user_locations=altered_ap[index_of_altered_AP]['User locations']
+            original_unaltered_RP=altered_ap[index_of_altered_AP]['Unchanged RP']
+
+            affected_location=[]
+            unaffected_location=[]
+            for j in range(len(Fingerprint_A)):
+                if alter_AP[i] not in Fingerprint_A[j]:
+                    unaffected_location.append(RP_location[j])
+                else:
+                    affected_location.append(RP_location[j])
+
+            for j in range(len(affected_location)):
+                if affected_location[j] not in original_altered_RP:
+                    original_altered_RP.append(affected_location[j])
+
+
+            for j in range(len(unaffected_location)):
+                if unaffected_location[j] not in original_unaltered_RP:
+                    original_unaltered_RP.append(unaffected_location[j])
+
+            if final_estimation not in original_user_locations:
+                original_user_locations.append(final_estimation)
+
+            #delete dictionary
+
+            altered_ap[index_of_altered_AP].clear()
+            altered_ap.pop(index_of_altered_AP)
+
+            dummy=dict({"altered ap mac":alter_AP[i], "altered RP": original_altered_RP, "User locations": original_user_locations, "Unchanged RP": original_unaltered_RP})
+            altered_ap.append(dummy)
+            #print (altered_ap)
+
+    #print(altered_ap)
+        
+    #write
+    f= open("alter_ap.txt", "w")
+    for i in range(len(altered_ap)):
+        f.write(altered_ap[i]['altered ap mac'])
+        f.write(':')
+        f.write(' [')
+
+        for j in range(len(altered_ap[i]['altered RP'])):
+            #print(len(altered_ap[i]['altered RP']))
+
+            if len(altered_ap[i]['altered RP'][j]) !=1:
+
+                f.write('(')
+                #print(altered_ap[i]['altered RP'][j][0])
+                f.write(str(altered_ap[i]['altered RP'][j][0]))
+                f.write(',')
+                f.write(str(altered_ap[i]['altered RP'][j][1]))
+                f.write(')')
+                if j != len(altered_ap[i]['altered RP'])-1:
+                    f.write(',')
+
+        f.write(']')
+
+        f.write(' [')
+
+        for j in range(len(altered_ap[i]['User locations'])):
+            if len(altered_ap[i]['User locations'][j]) !=1:
+                f.write('(')
+                #print(str(altered_ap[i]['User locations'][j][0]))
+                f.write(str(altered_ap[i]['User locations'][j][0]))
+                f.write(',')
+                f.write(str(altered_ap[i]['User locations'][j][1]))
+                f.write(')')
+                if j != len(altered_ap[i]['User locations'])-1:
+                    f.write(',')
+
+        f.write(']')
+        
+        f.write(' [')
+
+        for j in range(len(altered_ap[i]['Unchanged RP'])):
+            if len(altered_ap[i]['Unchanged RP'][j]) !=1:
+                f.write('(')
+                f.write(str(altered_ap[i]['Unchanged RP'][j][0]))
+                f.write(',')
+                f.write(str(altered_ap[i]['Unchanged RP'][j][1]))
+                f.write(')')
+                if j != len(altered_ap[i]['Unchanged RP'])-1:
+                    f.write(',')
+
+        f.write(']')
+        f.write('\n')
         
     return final_estimation,alter_AP
 
