@@ -29,6 +29,9 @@ def altered_ap():
     if address != None:
         data=request.get_json()
         changed_RP, location, unchanged_RP = get_altered_AP.get_altered_AP(address)
+        print(changed_RP)
+        print(location)
+        print(unchanged_RP)
     else:
         changed_RP = 'Not found' 
         location = 'Not found'
