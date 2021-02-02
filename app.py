@@ -30,9 +30,9 @@ def altered_ap():
     if address != None:
         data=request.get_json()
         changed_RP, location, unchanged_RP = get_altered_AP.get_altered_AP(address)
-        print(changed_RP)
-        print(location)
-        print(unchanged_RP)
+        #print(changed_RP)
+        #print(location)
+        #print(unchanged_RP)
         return jsonify({"data": {"altered_rp": changed_RP, "ap_position": location, "normal_rp" : unchanged_RP}})
     else:
         data=request.get_json()
