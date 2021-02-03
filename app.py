@@ -29,11 +29,11 @@ def altered_ap():
     address = request.args.get('mac')
     if address != None:
         data=request.get_json()
-        changed_RP, location, unchanged_RP = get_altered_AP.get_altered_AP(address)
+        floor, changed_RP, location, unchanged_RP = get_altered_AP.get_altered_AP(address)
         print(changed_RP)
         print(location)
         print(unchanged_RP)
-        return jsonify({"data": {"altered_rp": changed_RP, "ap_position": location, "normal_rp" : unchanged_RP}})
+        return jsonify({"data": {"floor": floor , "altered_rp": changed_RP, "ap_position": location, "normal_rp" : unchanged_RP}})
     else:
         data=request.get_json()
         altered_ap_list = get_altered_AP_list.get_altered_AP_mac()

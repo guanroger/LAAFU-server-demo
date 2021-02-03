@@ -8,6 +8,7 @@ def get_altered_AP( mac_address ):
         #print(x)
         #make the list
         altered_ap_mac=''
+        floor=''
         altered_RP_location=[]
         user_location=[]
         unaltered_RP_location=[]
@@ -18,6 +19,9 @@ def get_altered_AP( mac_address ):
                 altered_ap_mac=w.replace(':','')
 
             elif i==1:
+                floor=w
+
+            elif i==2:
                 #this is the altered RP location
                 cor1=w.replace('[','')
                 cor=cor1.replace(']','')
@@ -32,7 +36,7 @@ def get_altered_AP( mac_address ):
                     altered_RP_location.append(corXY)
                 #print(altered_RP_location)
             
-            elif i==2:
+            elif i==3:
                 #this is the altered RP location
                 cor1=w.replace('[','')
                 cor=cor1.replace(']','')
@@ -47,7 +51,7 @@ def get_altered_AP( mac_address ):
                     user_location.append(corXY)
                 #print(user_location)
 
-            elif i==3:
+            elif i==4:
                 #this is the altered RP location
                 cor1=w.replace('[','')
                 cor2=cor1.replace('\n','')
@@ -64,13 +68,14 @@ def get_altered_AP( mac_address ):
                 #print(unaltered_RP_location)
 
             i=i+1
-        dummy=dict({"altered ap mac":altered_ap_mac, "altered RP": altered_RP_location, "User locations": user_location, "Unchanged RP": unaltered_RP_location})
+        dummy=dict({"floor": floor , "altered ap mac":altered_ap_mac, "altered RP": altered_RP_location, "User locations": user_location, "Unchanged RP": unaltered_RP_location})
         altered_ap.append(dummy)
     #print (altered_ap)
     #print (V)
     f.close()
 
-    #return three things
+    #return four things
+    floor=''
     changed_RP=[]
     location=[]
     unchanged_RP=[]
@@ -81,6 +86,8 @@ def get_altered_AP( mac_address ):
 
 
             #construct dictionary
+            floor=altered_ap[i]['floor']
+
             #changed_RP=altered_ap[i]['altered RP']
             for j in range(len(altered_ap[i]['altered RP'])):
                 if altered_ap[i]['altered RP'][j][0] != '':
@@ -112,4 +119,4 @@ def get_altered_AP( mac_address ):
 
 
 
-    return changed_RP, location, unchanged_RP
+    return floor, changed_RP, location, unchanged_RP

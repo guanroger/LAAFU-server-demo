@@ -119,7 +119,7 @@ def localization(json_example):
     #print (V)
     f.close()   
     '''
-    RP_location, Fingerprint_A, Fingerprint_V, A, V = fingerprint_utils.load_fingerprint(json_example)
+    RP_location, Fingerprint_A, Fingerprint_V, A, V , floor= fingerprint_utils.load_fingerprint(json_example)
     
     #print (A)
     #print (V)
@@ -134,7 +134,7 @@ def localization(json_example):
     #choose the best K RP
     #choose the nearest Q RP
     #bamdwidth b for Gaussian Kernel
-    M=10
+    M=15
     K=8
     Q=8
     b=0.02
@@ -846,7 +846,9 @@ def localization(json_example):
     f= open("alter_ap.txt", "w")
     for i in range(len(altered_ap)):
         f.write(altered_ap[i]['altered ap mac'])
-        f.write(':')
+        f.write(': ')
+        f.write(floor)
+
         f.write(' [')
 
         for j in range(len(altered_ap[i]['altered RP'])):
