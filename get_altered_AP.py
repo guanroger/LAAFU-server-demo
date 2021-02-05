@@ -93,9 +93,11 @@ def get_altered_AP( mac_address ):
                 if altered_ap[i]['altered RP'][j][0] != '':
 
                     dummy=dict({'x':float(altered_ap[i]['altered RP'][j][0]), 'y':float(altered_ap[i]['altered RP'][j][1])})
-                else:
-                    dummy=dict({'x':None, 'y':None})
-                changed_RP.append(dummy)
+                    changed_RP.append(dummy)
+                #else:
+                    #dummy=dict({'x':None, 'y':None})
+                #    dummy=None
+                #changed_RP.append(dummy)
 
             
             #location=altered_ap[i]['User locations']
@@ -104,18 +106,23 @@ def get_altered_AP( mac_address ):
                 if altered_ap[i]['User locations'][j][0] != '':
 
                     dummy=dict({'x':float(altered_ap[i]['User locations'][j][0]), 'y':float(altered_ap[i]['User locations'][j][1])})
-                else:
-                    dummy=dict({'x':None, 'y':None})
-                location.append(dummy)
+                    location.append(dummy)
+
+                #else:
+                    #dummy=dict({'x':None, 'y':None})
+                #    dummy=None
+                #location.append(dummy)
             #unchanged_RP=altered_ap[i]['Unchanged RP']
 
             for j in range(len(altered_ap[i]['Unchanged RP'])):
                 if altered_ap[i]['Unchanged RP'][j][0] != '':
 
                     dummy=dict({'x':float(altered_ap[i]['Unchanged RP'][j][0]), 'y':float(altered_ap[i]['Unchanged RP'][j][1])})
-                else:
-                    dummy=dict({'x':None, 'y':None})
-                unchanged_RP.append(dummy)
+                    unchanged_RP.append(dummy)
+                #else:
+                    #dummy=dict({'x':None, 'y':None})
+                #    dummy=None
+                #unchanged_RP.append(dummy)
 
 
 
