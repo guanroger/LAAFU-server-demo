@@ -716,11 +716,22 @@ def localization(json_example):
     for i in range(len(classes[lowest_SDCM][lowest_class])):
         alter_AP.append(classes[lowest_SDCM][lowest_class][i]['MAC'])
 
+
+    #print("altered AP: ", alter_AP)
+
+    #transform altered ap list
+    alter_AP_with_floor=[]
+    for i in range(len(alter_AP)):
+        alter_AP_with_floor.append(str(alter_AP[i])+"_"+str(floor))
+
+    #print("altered AP with floor: ", alter_AP_with_floor)
+
     f=open("alter_ap.txt","r")
     altered_ap=[] #dictionary
     for x in f:
         #make the list
         altered_ap_mac=''
+        old_floor =''
         altered_RP_location=[]
         user_location=[]
         unaltered_RP_location=[]
@@ -731,6 +742,10 @@ def localization(json_example):
                 altered_ap_mac=w.replace(':','')
 
             elif i==1:
+                old_floor=w
+                print(old_floor)
+
+            elif i==2:
                 #this is the altered RP location
                 cor1=w.replace('[','')
                 cor=cor1.replace(']','')
@@ -745,7 +760,7 @@ def localization(json_example):
                     altered_RP_location.append(corXY)
                 #print(altered_RP_location)
             
-            elif i==2:
+            elif i==3:
                 #this is the altered RP location
                 cor1=w.replace('[','')
                 cor=cor1.replace(']','')
@@ -760,7 +775,7 @@ def localization(json_example):
                     user_location.append(corXY)
                 #print(user_location)
 
-            elif i==3:
+            elif i==4:
                 #this is the altered RP location
                 cor1=w.replace('[','')
                 cor2=cor1.replace('\n','')
@@ -778,9 +793,9 @@ def localization(json_example):
                 #print(unaltered_RP_location)
 
             i=i+1
-        dummy=dict({"altered ap mac":altered_ap_mac, "altered RP": altered_RP_location, "User locations": user_location, "Unchanged RP": unaltered_RP_location})
+        dummy=dict({"floor": old_floor, "altered ap mac":altered_ap_mac, "altered RP": altered_RP_location, "User locations": user_location, "Unchanged RP": unaltered_RP_location})
 
-    altered_ap.append(dummy)
+        altered_ap.append(dummy)
     #print (altered_ap)
     #print (V)
     f.close()
@@ -790,65 +805,96 @@ def localization(json_example):
     All_altered_ap=[]
     for i in range(len(altered_ap)):
         All_altered_ap.append(altered_ap[i]['altered ap mac'])
+    #print("old altered AP", All_altered_ap)
 
-    for i in range(len(alter_AP)):
-        if alter_AP[i] not in All_altered_ap:
+    for i in range(len(alter_AP_with_floor)):
+        if alter_AP_with_floor[i] not in All_altered_ap:
+            #print( "new ap not in old")
             affected_location=[]
             unaffected_location=[]
             user_location=[]
             user_location.append(final_estimation)
             for j in range(len(Fingerprint_A)):
-                if alter_AP[i] not in Fingerprint_A[j]:
+                if alter_AP_with_floor[i] not in Fingerprint_A[j]:
                     unaffected_location.append(RP_location[j])
                 else:
                     affected_location.append(RP_location[j])
-            dummy=dict({"altered ap mac":alter_AP[i], "altered RP": affected_location, "User locations": user_location, "Unchanged RP": unaffected_location})
+            dummy=dict({"floor":floor ,"altered ap mac":alter_AP_with_floor[i], "altered RP": affected_location, "User locations": user_location, "Unchanged RP": unaffected_location})
             altered_ap.append(dummy)
 
         else:
-            index_of_altered_AP=All_altered_ap.index(alter_AP[i])
+            #print( "already in")
+            
+            index_of_altered_AP=All_altered_ap.index(alter_AP_with_floor[i])
+            original_floor=altered_ap[index_of_altered_AP]['floor']
             original_altered_RP=altered_ap[index_of_altered_AP]['altered RP']
             original_user_locations=altered_ap[index_of_altered_AP]['User locations']
             original_unaltered_RP=altered_ap[index_of_altered_AP]['Unchanged RP']
 
+            #print ("index of altered ap old :",index_of_altered_AP)
+            #print ("old floor:", original_floor)
+            #print (i)
+            '''
             affected_location=[]
             unaffected_location=[]
             for j in range(len(Fingerprint_A)):
-                if alter_AP[i] not in Fingerprint_A[j]:
+                if alter_AP_with_floor[i] not in Fingerprint_A[j]:
                     unaffected_location.append(RP_location[j])
                 else:
                     affected_location.append(RP_location[j])
-
             for j in range(len(affected_location)):
                 if affected_location[j] not in original_altered_RP:
                     original_altered_RP.append(affected_location[j])
-
-
             for j in range(len(unaffected_location)):
                 if unaffected_location[j] not in original_unaltered_RP:
                     original_unaltered_RP.append(unaffected_location[j])
+            '''
+            # append user location list first
+            original_user_locations_list=[]
+            new_user_location=[]
+            for j in range(len(original_user_locations)):
+                old_location=[]
+                for k in range(len(original_user_locations[j])):
+                    float_location= float(original_user_locations[j][k])
+                    old_location.append(float_location)
+                original_user_locations_list.append(old_location)
 
-            if final_estimation not in original_user_locations:
-                original_user_locations.append(final_estimation)
+            #print(original_user_locations_list)
+            #for j in range(len(original_user_locations)):
+            #    original_user_locations_list.append(original_user_locations[i])
 
+            for j in range(len(original_user_locations_list)):
+                if final_estimation[0] == original_user_locations_list[j][0] and final_estimation[1] == original_user_locations_list[j][1]:
+                    break
+                else:
+                    if j == len(original_user_locations_list)-1:
+                        new_user_location.append(final_estimation)
+                    continue
+
+
+            #print(new_user_location)
             #delete dictionary
+            
+            #find the altered ap and update the location
+            for j in range(len(new_user_location)):
 
-            altered_ap[index_of_altered_AP].clear()
-            altered_ap.pop(index_of_altered_AP)
+                altered_ap[index_of_altered_AP]['User locations'].append(new_user_location[j])
+                altered_ap[index_of_altered_AP]['floor']=original_floor
 
-            dummy=dict({"altered ap mac":alter_AP[i], "altered RP": original_altered_RP, "User locations": original_user_locations, "Unchanged RP": original_unaltered_RP})
+            '''
+            dummy=dict({"altered ap mac":alter_AP_with_floor[i], "altered RP": original_altered_RP, "User locations": original_user_locations, "Unchanged RP": original_unaltered_RP})
             altered_ap.append(dummy)
+            '''
             #print (altered_ap)
 
-    #print(altered_ap)
+    #print(altered_ap[0]['altered ap mac'])
         
     #write
     f= open("alter_ap.txt", "w")
     for i in range(len(altered_ap)):
         f.write(altered_ap[i]['altered ap mac'])
         f.write(': ')
-        f.write(floor)
-
+        f.write(str(altered_ap[i]['floor']))
         f.write(' [')
 
         for j in range(len(altered_ap[i]['altered RP'])):
@@ -896,6 +942,6 @@ def localization(json_example):
 
         f.write(']')
         f.write('\n')
-        
+
     return final_estimation,alter_AP
 
