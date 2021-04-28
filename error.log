@@ -1,6 +1,0 @@
-INFO:werkzeug: * Restarting with stat
-WARNING:werkzeug: * Debugger is active!
-INFO:werkzeug: * Debugger PIN: 233-598-630
-INFO:werkzeug: * Running on http://127.0.0.1:5020/ (Press CTRL+C to quit)
-INFO:werkzeug: * Detected change in 'd:\\TemDrive\\FYP\\serverDemo_old\\app.py', reloading
-INFO:werkzeug: * Restarting with stat

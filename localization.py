@@ -4,8 +4,11 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import cycle
-import time
 import fingerprint_utils
+import whereami_utils
+import logging
+
+logger = logging.getLogger('app.sub')
 
 '''
 functions and class
@@ -69,6 +72,8 @@ def distance(x1, y1, x2, y2):
 get the data from the file
 '''
 def localization(json_example):
+    logger.debug("test1")
+    logger.debug("test2")
     '''
     #RP location
     f= open("p_all.txt", "r")
@@ -119,12 +124,24 @@ def localization(json_example):
     #print (V)
     f.close()   
     '''
-    RP_location, Fingerprint_A, Fingerprint_V, A, V , floor= fingerprint_utils.load_fingerprint(json_example)
     
-    #print (A)
-    #print (V)
-
-
+    RP_location, Fingerprint_A, Fingerprint_V, A, V , floor = fingerprint_utils.load_fingerprint(json_example)
+    #print(Fingerprint_A)
+    #print(floor)
+    '''
+    TODO: filter new AP (element in A not in Fingerprint_A, also remove from V) and store it in a array
+    '''
+    to_be_deleted_idxs = []
+    new_ap_list = []
+    fingerprint_ap_list = set([ap for ap_list in Fingerprint_A for ap in ap_list])
+    for idx, mac in enumerate(A):
+        if mac not in fingerprint_ap_list:
+            to_be_deleted_idxs.append(idx)
+            new_ap_list.append({'mac': mac, 'rssi': V[idx]})
+    for idx in sorted(to_be_deleted_idxs, reverse=True):
+        A.pop(idx)
+        V.pop(idx)
+    
     '''
     start of the code
     '''
@@ -134,12 +151,12 @@ def localization(json_example):
     #choose the best K RP
     #choose the nearest Q RP
     #bamdwidth b for Gaussian Kernel
-    M=15
+    M=30
     K=8
     Q=8
     b=0.02
+    RP_radius=10
     #the max of K is the total number of fingerprint
-
 
 
     APindex=[]
@@ -163,65 +180,90 @@ def localization(json_example):
     #generagte M subset
     #with subsets vector 
     #subsets_old =[[dictionary of detected AP1,dictionary of detected AP2, dictionary of detected AP3, ...], []]
+    subsets_number=[]
+    subsets_number_bin=[]
     subsets=[] # only has MAC address
     subsets_RSSI=[] #only has RSSI vector 
-
+    '''
     #generate M subset with size>3
     fulfillM=False
 
     while(not fulfillM):
         one_subset=[]
         one_subset_RSSI=[]
-        #subset.append(one_subset)
+
         #add AP inside
         for j in range(len(DetectedAP)):
             coin = random.randint(1, 2)
             if coin ==1: #if it is the head
                 one_subset.append(DetectedAP[j])
-                one_subset_RSSI.append(float(RSS[j]['RSSI']))
+                one_subset_RSSI.append(int(RSS[j]['RSSI']))
             else: #if it is not the head dont do anything
 
                 break
-        
+
+        #delete different constraint
+
         if (len(one_subset)>=3):
             if (one_subset not in subsets):
                 subsets.append(one_subset)
                 subsets_RSSI.append(one_subset_RSSI)
-
         
         if (len(subsets)>=M):
             fulfillM=True
 
+    '''
+    """
+    TODO: add a counter to break the while loop
+    """
+    fulfillM=False
+    total_prop_number_of_subsets = int(math.pow(2, len(DetectedAP))-1)
+    iter_ctr = 0
+    #print(total_prop_number_of_subsets)
+
+    while(not fulfillM and not(iter_ctr > M*10)):
+        number_of_subset=random.randint(0, total_prop_number_of_subsets)
+        #print(number_of_subset)
+        binary=bin(number_of_subset)[2:].zfill(len(DetectedAP))
+        #print(binary)
 
 
-    #######
-    #for i in range(M):
-    #    one_subset=[]
-    #    #subset.append(one_subset)
-    #    #add AP inside
-    #    for j in range(len(DetectedAP)):
-    #        coin = random.randint(1, 2)
-    #        if coin ==1: #if it is the head
-    #            one_subset.append(DetectedAP[j])
-    #        else: #if it is not the head dont do anything
-    #
-    #            break
-    #    
-    #    subsets_old.append(one_subset)
-    ##print (subsets_old)
-    #pop_item=[]
-    #for i in range(len(subsets_old)):
-    #    if len(subsets_old[i]) <3:
-    #        pop_item.append(i)
-    #
-    ##print(pop_item)
-    #subsets=[]
-    #for i in range(len(subsets_old)):
-    #    if i not in pop_item:
-    #        subsets.append(subsets_old[i])
+        
+        #check whether the lenth>=3
+        #print(binary.count("1"))
+        if (binary.count("1")>=3):
+            if (number_of_subset not in subsets_number):
+                subsets_number.append(number_of_subset)    
+                subsets_number_bin.append(binary)
 
-    #print("subsets MAC: ",subsets)
-    #print("subsets MAC with RSSI: ",subsets_RSSI)
+        if (len(subsets_number)>=M):
+            fulfillM= True
+        iter_ctr += 1
+
+    if len(subsets_number)==0:
+        subsets_number.append(total_prop_number_of_subsets)
+        subsets_number_bin.append(bin(total_prop_number_of_subsets)[2:])
+    print(subsets_number)
+    print(subsets_number_bin)
+    #generate subset according to subset number
+
+
+    for i in range(len(subsets_number_bin)):
+        one_subset=[]
+        one_subset_RSSI=[]
+        for j in range(len(subsets_number_bin[i])):
+            #print(subsets_number_bin[i][j])
+            if (subsets_number_bin[i][j]=='1'):
+                one_subset.append(DetectedAP[j])
+                one_subset_RSSI.append(int(RSS[j]['RSSI']))
+        subsets.append(one_subset)
+        subsets_RSSI.append(one_subset_RSSI)
+
+
+
+    print("subsets MAC: ",subsets)
+    print("subsets MAC with RSSI: ",subsets_RSSI)
+
 
 
 
@@ -236,7 +278,7 @@ def localization(json_example):
         for j in range(len(one_subset)):
             for k in range(len(RSS)):
                 if one_subset[j] == RSS[k].get("MAC_address"):
-                    Vi.append(float(RSS[k].get("RSSI")))
+                    Vi.append(int(RSS[k].get("RSSI")))
                     Vi_MAC_address.append( RSS[k].get("MAC_address"))
                 else:
                     Vi.append(0)
@@ -289,11 +331,11 @@ def localization(json_example):
             locations[i][0] += float(RPs[k].location[0]) * weight
             locations[i][1] += float(RPs[k].location[1]) * weight
         
-    #print("estimated locations: ",locations) 
+    print("estimated locations: ",locations) 
 
 
 
-    t1=time.time()
+
     #APC algorithm 
     sim=np.array([[0 for j in range(len(locations))]for i in range (len(locations))], dtype= float)
     for i in range(len(sim)):
@@ -303,6 +345,7 @@ def localization(json_example):
             ySquare=math.pow(locations[i][1]-locations[j][1],2)
             #sim[i][j]=math.sqrt(xSquare+ySquare)
             sim[i][j]=-(xSquare+ySquare)
+            #sim[i][j]=-math.exp(math.sqrt(xSquare+ySquare))
 
     #print("sim: ",sim)
 
@@ -322,26 +365,8 @@ def localization(json_example):
     damping=0
 
     for i in range (200):
-        #print("interation: ", i)
-        '''
-        #create create new res
-        new_res=np.array([[0 for k in range(len(res[j]))]for j in range(len(res))], dtype=float)
-        for j in range(len(res)):
-            for k in range(len(res[j])):
-                new_res[j][k]=res[j][k]
-    
+        print("interation: ", i)
 
-        #print(new_res)
-
-        #create create new avail
-        new_avail=np.array([[0 for k in range(len(avail[j]))]for j in range(len(avail))], dtype=float)
-        for j in range(len(avail)):
-            for k in range(len(avail[j])):
-                new_avail[j][k]=avail[j][k]
-        
-        
-        #print(new_avail)
-        '''
         #res update
         for j in range(len(locations)):
             for k in range(len(locations)):
@@ -382,33 +407,17 @@ def localization(json_example):
         #print("avail: ",new_avail)
 
         
-        #the highest criterion value of each row in sol is exemplar 
-        #the rows with the same exemplar value is in the same cluster
-        #sol = new_res + new_avail
-        sol = res + avail
+    
+        sol = res+avail
         #print(sol)
         
-        #print ("last exemplars: ",last_exemplars)
+        print ("last exemplars: ",last_exemplars)
         #print ("sol: ",sol)
 
         exemplars = np.unique(np.argmax(sol, axis=1))
-        #print("label: ", np.argmax(sol, axis=1))
-        #print("exemplars: ",exemplars)
-        
-        #exemplars_with_all=[] #all the location of the centriod id
-        #exemplars=np.array([]) # the max index of each row of the sol
-        #for j in range(len(sol)):
-        #    max_id_in_row=np.argmax(sol[j])
-        #    exemplars_with_all.append(max_id_in_row)
-        #    print(max_id_in_row)
-        #    if max_id_in_row not in exemplars:
-        #        exemplars=np.append(exemplars,max_id_in_row)
+        print("label: ", np.argmax(sol, axis=1))
+        print("exemplars: ",exemplars)
 
-
-        #print("exemplars: ",exemplars)
-        #print("last exemplars: ",last_exemplars)
-        #print("last_sol ", last_sol)
-        #print("sol ", sol)
         
 
 
@@ -423,57 +432,12 @@ def localization(json_example):
 
         last_sol = sol
         last_exemplars = exemplars
-        '''
-        #update new res
-        for j in range(len(new_res)):
-            for k in range(len(new_res[j])):
-                res[j][k]=new_res[j][k]
 
-        #update new avaio
-        for j in range(len(new_avail)):
-            for k in range(len(new_avail[j])):
-                avail[j][k]=new_avail[j][k]
-
-        del new_avail
-        del new_res
-        '''
-
-    #print(location_with_centriod_id)
-    t2=time.time()
-    time_I= t2-t1
-        
-    '''
-    the visulization for debugging use
-    '''
-    '''
-    fig = plt.figure(figsize=(12, 6))
-
-    # every data point i chooses the maximum index k
-    labels = np.array([location_with_centriod_id[i] for i in range(len(location_with_centriod_id))])
-    exemplars = np.unique(labels)
-    colors = dict(zip(exemplars, cycle('bgrcmyk')))
-
-    x=subsets
-
-    for i in range(len(labels)):
-        X = x[i][0]
-        Y = x[i][1]
-        
-        if i in exemplars:
-            exemplar = i
-            edge = 'k'
-            ms = 9
-        else:
-            exemplar = labels[i] #####
-            ms = 3
-            edge = None
-            plt.plot([X, x[exemplar][0]], [Y, x[exemplar][1]], c=colors[exemplar])
-        plt.plot(X, Y, 'o', markersize=ms,  markeredgecolor=edge, c=colors[exemplar])
-        #plt.annotate(str(i) , xy=(X, Y), xytext=(80, 280))
         
 
-    plt.title('Number of exemplars: %s' % len(exemplars))
-    '''
+    print(location_with_centriod_id)
+
+    
     #High average signal similarity
     cluster_centorid=[]
     centorid_ID=[]
@@ -505,8 +469,8 @@ def localization(json_example):
         cluster.append(dummy1)
         cluster_ID.append(dummy2)
 
-    #print(cluster)
-    #print(cluster_ID)
+    print(cluster)
+    print(cluster_ID)
 
 
     #find Q nearest location of RPs
@@ -587,7 +551,7 @@ def localization(json_example):
         Qc.append(Qc_for_one_cluster)
         #print(totalCosine)
         #print(Q*len(cluster[i]['cluster']))
-    #print("Qc: ",Qc)
+    print("Qc: ",Qc)
 
 
     #Large cluster size
@@ -604,29 +568,28 @@ def localization(json_example):
         Vc.append( math.exp(-(1 / ( 2 * math.pow(b,2) ) ) * ( math.pow(C - Cmin, 2) )))
         #print(type(Vc[i]))
 
-    #print("Vc: ",Vc)
+    print("Vc: ",Vc)
 
     #calculate the score
 
     scores=[Qc[i]-Vc[i] for i in range(len(Qc))]
-    #print("scores of each cluster: ",scores)
+    print("scores of each cluster: ",scores)
     maximum_score_id=scores.index(max(scores))
     #the location detected in the end is the maximum score location
     final_estimation=cluster[maximum_score_id]['centorid']
     final_estimation_ID=cluster_ID[maximum_score_id]['centorid']
-    #print("final estimation:",final_estimation)
-    #print("ID :",final_estimation_ID )
-
+    print("final estimation:",final_estimation)
+    print("ID :",final_estimation_ID )
 
     #5.3
     #altered ap part
     dense_subsets=[]
     #print(cluster[maximum_score_id]['cluster'])
-    #print(cluster_ID[maximum_score_id]['cluster'])
+    print(cluster_ID[maximum_score_id]['cluster'])
     for j in range(len(cluster_ID[maximum_score_id]['cluster'])):
         dummy=subsets[cluster_ID[maximum_score_id]['cluster'][j]]
         dense_subsets.append(dummy)
-    #print(dense_subsets)
+    print("dense subsets: ",dense_subsets)
 
     unique=[]
     for i in range(len(dense_subsets)):
@@ -634,7 +597,7 @@ def localization(json_example):
             if dense_subsets[i][j] not in unique:
                 unique.append(dense_subsets[i][j])
 
-    #print(unique)
+    print("unique ",unique)
     frequency=[0 for i in range (len(unique))]
     for i in range(len(dense_subsets)):
         for j in range(len(dense_subsets[i])):
@@ -647,7 +610,7 @@ def localization(json_example):
     for i in range(len(unique)):
         dummy=dict({"MAC": unique[i], "frequency": frequency[i]})
         AP_freq.append(dummy)
-    #print(AP_freq)
+    print("AP frequency in dense cluster: ",AP_freq)
 
     #ordered by freq
     for i in range(len(AP_freq)):
@@ -695,10 +658,6 @@ def localization(json_example):
         for j in range(len(class_B)):
             class_B_sum=math.pow((class_B[j]['frequency']-f_mean_in_B),2)
                 
-        #print(class_A)
-        #print(class_A_sum)
-        #print(class_B)
-        #print(class_B_sum)
 
         SDCM[i]=class_A_sum+class_B_sum
         SDCM_class_freq[i][0]=class_A_sum
@@ -706,242 +665,245 @@ def localization(json_example):
         classes.append(dummy)
 
 
-    
-    #print("SDCM each freq: ",SDCM_class_freq)
-
+    print("SDCM: ",SDCM)
+    #print("SDCM each freq: ",SDCM_class_freq
 
     lowest_SDCM=SDCM.argmin()
     lowest_class=SDCM[lowest_SDCM].argmin()
+    print("lowest",len(classes))
     alter_AP=[]
-    for i in range(len(classes[lowest_SDCM][lowest_class])):
-        alter_AP.append(classes[lowest_SDCM][lowest_class][i]['MAC'])
+    for i in range(len(classes[int(lowest_SDCM)][int(lowest_class)])):
+        alter_AP.append(classes[int(lowest_SDCM)][int(lowest_class)][i]['MAC'])
 
+    # altered ap size is 0--> means that many of the fingerprint has changed
 
-    #print("altered AP: ", alter_AP)
-
-    #transform altered ap list
-    alter_AP_with_floor=[]
-    for i in range(len(alter_AP)):
-        alter_AP_with_floor.append(str(alter_AP[i])+"_"+str(floor))
-
-    #print("altered AP with floor: ", alter_AP_with_floor)
+    print("altered AP: ", alter_AP)
 
     f=open("alter_ap.txt","r")
     altered_ap=[] #dictionary
     for x in f:
         #make the list
         altered_ap_mac=''
-        old_floor =''
-        altered_RP_location=[]
-        user_location=[]
-        unaltered_RP_location=[]
+        old_frequency =0
+        old_locations=[]
         i=0
         for w in x.split(' '):
             if i==0:
-                #print(w)
                 altered_ap_mac=w.replace(':','')
-
+                #print(altered_ap_mac)
             elif i==1:
-                old_floor=w
-                print(old_floor)
+                old_frequency=w
+                #print(old_frequency)
 
             elif i==2:
-                #this is the altered RP location
-                cor1=w.replace('[','')
-                cor=cor1.replace(']','')
-                #print(cor)
-                for c in cor.split('),('):
-                    one_point1=c.replace('(', '')
-                    one_point=one_point1.replace(')', '')
-                    #print(one_point)
-                    corXY=[]
-                    for p in one_point.split(','):
-                        corXY.append(p)
-                    altered_RP_location.append(corXY)
-                #print(altered_RP_location)
-            
-            elif i==3:
-                #this is the altered RP location
-                cor1=w.replace('[','')
-                cor=cor1.replace(']','')
-                #print(cor)
-                for c in cor.split('),('):
-                    one_point1=c.replace('(', '')
-                    one_point=one_point1.replace(')', '')
-                    #print(one_point)
-                    corXY=[]
-                    for p in one_point.split(','):
-                        corXY.append(p)
-                    user_location.append(corXY)
-                #print(user_location)
+                #print(w)
+                col=w.replace('[','')
+                col1=col.replace(']','')
+                for c in col1.split(','):
+                    c1=c.replace('{','')
+                    c2=c1.replace('}','')
+                    old_floor=''
+                    old_one_location=[]
+                    old_RSSI_difference=0.0
+                    old_RSSI_averge=0.0
+                    j=0
+                    for a in c2.split('/'):
+                        if j==0: #floor
+                            old_floor=a
+                        elif j==1: #location
+                            a1=a.replace('(','')
+                            a2=a1.replace(')','')
+                            for b in a2.split(';'):
+                                old_one_location.append(float(b))
+                        elif j==2: #RSSI difference
+                            old_RSSI_difference=float(a)
 
-            elif i==4:
-                #this is the altered RP location
-                cor1=w.replace('[','')
-                cor2=cor1.replace('\n','')
-                cor=cor2.replace(']','')
-
-                #print(cor)
-                for c in cor.split('),('):
-                    one_point1=c.replace('(', '')
-                    one_point=one_point1.replace(')', '')
-                    #print(one_point)
-                    corXY=[]
-                    for p in one_point.split(','):
-                        corXY.append(p)
-                    unaltered_RP_location.append(corXY)
-                #print(unaltered_RP_location)
+                        elif j ==3:
+                            old_RSSI_averge=float(a)
+                        j=j+1
+                    inner_dummy=dict({"floor": old_floor, "location": old_one_location, "rssi_diff": old_RSSI_difference, "original_rssi": old_RSSI_averge})
+                    old_locations.append(inner_dummy)
+                #print(old_locations)
 
             i=i+1
-        dummy=dict({"floor": old_floor, "altered ap mac":altered_ap_mac, "altered RP": altered_RP_location, "User locations": user_location, "Unchanged RP": unaltered_RP_location})
+        dummy=dict({"Altered AP MAC": altered_ap_mac, "frequency": old_frequency, "Location":old_locations})
 
         altered_ap.append(dummy)
-    #print (altered_ap)
-    #print (V)
+    print (altered_ap)
     f.close()
 
     #append new data
     #all altered ap for check
     All_altered_ap=[]
     for i in range(len(altered_ap)):
-        All_altered_ap.append(altered_ap[i]['altered ap mac'])
-    #print("old altered AP", All_altered_ap)
+        All_altered_ap.append(altered_ap[i]['Altered AP MAC'])
+    print("old altered AP", All_altered_ap)
 
-    for i in range(len(alter_AP_with_floor)):
-        if alter_AP_with_floor[i] not in All_altered_ap:
-            #print( "new ap not in old")
-            affected_location=[]
-            unaffected_location=[]
-            user_location=[]
-            user_location.append(final_estimation)
-            for j in range(len(Fingerprint_A)):
-                if alter_AP_with_floor[i] not in Fingerprint_A[j]:
-                    unaffected_location.append(RP_location[j])
-                else:
-                    affected_location.append(RP_location[j])
-            dummy=dict({"floor":floor ,"altered ap mac":alter_AP_with_floor[i], "altered RP": affected_location, "User locations": user_location, "Unchanged RP": unaffected_location})
-            altered_ap.append(dummy)
+    # do the natual break for the ap
+    # firtly append the old one
+    all_altered_ap_frequency_map=[] # dictionary
+    '''
+    for i in range(len(All_altered_ap)):
+        index_of_mac = next((index for (index, d) in enumerate(altered_ap) if d["Altered AP MAC"] ==  All_altered_ap[i]), None)
+        dummy=dict({"Altered AP MAC": All_altered_ap[i],"Frequency": altered_ap[index_of_mac]['frequency'], "RSSI average": 0.0, "RSSI difference": 0.0})
+        all_altered_ap_frequency_map.append(dummy)
+    altered_AP_new=[]
+    '''
+    # add the new altered ap
+    for i in range(len(alter_AP)):
+        if alter_AP[i] not in All_altered_ap:
+            dummy=dict({"Altered AP MAC": alter_AP[i],"Frequency": 1, "RSSI average":0.0, "RSSI difference": 0.0})
+            all_altered_ap_frequency_map.append(dummy)
+
 
         else:
-            #print( "already in")
+            index_of_mac = next((index for (index, d) in enumerate(altered_ap) if d["Altered AP MAC"] == alter_AP[i]), None)
+            fre=int(altered_ap[index_of_mac]["frequency"])
+            fre+=1
+            dummy=dict({"Altered AP MAC": alter_AP[i],"Frequency": fre, "RSSI average":0.0, "RSSI difference": 0.0})
+            all_altered_ap_frequency_map.append(dummy)
+
+
+    print("all altered",all_altered_ap_frequency_map)
+
+
+    #choose the highest among two
+    '''
+    for i in range(len(all_altered_ap_frequency_map)):
+        min_f=int(all_altered_ap_frequency_map[i]['Frequency'])
+        for j in range(i+1,len(all_altered_ap_frequency_map)):
+            if (int(all_altered_ap_frequency_map[j]['Frequency'])<min_f):
+                    temp=all_altered_ap_frequency_map[i]
+                    all_altered_ap_frequency_map[i]=all_altered_ap_frequency_map[j]
+                    all_altered_ap_frequency_map[j]=temp
+
+    print("sorted: " ,all_altered_ap_frequency_map)
+
+    chosen_altered_ap=[]
+
+    for i in range(int(len(all_altered_ap_frequency_map)/2), len(all_altered_ap_frequency_map)):
+        chosen_altered_ap.append(all_altered_ap_frequency_map[i])
+
+    '''
+    chosen_altered_ap=[]
+    for i in range(len(all_altered_ap_frequency_map)):
+        chosen_altered_ap.append(all_altered_ap_frequency_map[i])
+    #after finding the chosen Altered AP, we need to find the RP that is 5m with the location
+
+    scale=whereami_utils.load_whereami_scale(floor)
+
+    #choose the nearest RP in radius of 5 meter---> 5* scale for calculation
+    distances = RP_radius*scale
+
+    RP_in_radius=[]
+
+    # need to use the Fingerprint_A, and Fingerprint_V
+    for i in range(len(RP_location)):
+        dis=distance(float(RP_location[i][0]), float(RP_location[i][1]),final_estimation[0], final_estimation[1])
+        if dis <= distances:
+            #print(dis)
+            dummy=dict({"RP location": RP_location[i], "RP fingerprint MAC": Fingerprint_A[i], "RP fingerprint V": Fingerprint_V[i]})
+            RP_in_radius.append(dummy)
+
+    #checking print all RP location in raduis
+    print("RP")
+    for i in range(len(RP_in_radius)):
+        print("RP in the radius",RP_in_radius[i]['RP fingerprint MAC'])
+
+    """
+    TODO: adjust the average function so that it suits the range of rssi value, [-101, 20](?), use[-105.0, -20] to play safe
+    """
+    for i in range (len(RP_in_radius)):
+        for j in range(len(chosen_altered_ap)):
+            if chosen_altered_ap[j]['Altered AP MAC'] in RP_in_radius[i]['RP fingerprint MAC']:
+                #print("chosen ap in radius",chosen_altered_ap[j]['Altered AP MAC'])
+                #print("RP in radius", RP_in_radius[i]['RP fingerprint MAC'])
+                index_of_mac_address=RP_in_radius[i]['RP fingerprint MAC'].index(chosen_altered_ap[j]['Altered AP MAC'])
+                #print(RP_in_radius[i]['RP fingerprint V'][index_of_mac_address])
+                chosen_altered_ap[j]['RSSI average']+=(float(RP_in_radius[i]['RP fingerprint V'][index_of_mac_address]) + 105.0)
+            else:
+                #print("AP not in fingerprint",chosen_altered_ap[j]['Altered AP MAC'] )
+                chosen_altered_ap[j]['RSSI average']+=0
+
+    #averageing
+    for i in range(len(chosen_altered_ap)):
+        if(len(RP_in_radius)!=0):
+            chosen_altered_ap[i]['RSSI average']=(chosen_altered_ap[i]['RSSI average']/len(RP_in_radius)) - 105.0
+        #print(chosen_altered_ap[i]['RSSI average'])
+
+    #calculate the difference between the estimated and the RSSI average
+
+    print("final altered AP: ", chosen_altered_ap)
+
+    for i in range(len(chosen_altered_ap)):
+        if (chosen_altered_ap[i]['Altered AP MAC'] in A):
+            A_index=A.index(chosen_altered_ap[i]['Altered AP MAC'])
+            chosen_altered_ap[i]['RSSI difference'] = abs(chosen_altered_ap[i]['RSSI average']-V[A_index])
+        print ("RSSI difference: ",chosen_altered_ap[i]['RSSI difference'])
+
+    print("finally chosen AP: ",chosen_altered_ap)
+
+
+    """
+    TODO: insert new ap to chosen_altered_ap: [{'Altered AP MAC': mac, 'RSSI difference': should be mearsured value from the request of the AP - min possible value of rssi (which is 105), 'RSSI average': should be 0 for new AP}]
+    not the best approach but a workaround
+    """
+    for new_ap in new_ap_list:
+        chosen_altered_ap.append({'Altered AP MAC': new_ap['mac'], "RSSI difference": new_ap['rssi'] + 105, 'RSSI average': 0})
+
+    #store the data for writing into file
+    for i in range(len(chosen_altered_ap)):
+        if chosen_altered_ap[i]['Altered AP MAC'] not in All_altered_ap:
+            print( "new ap not in old")
             
-            index_of_altered_AP=All_altered_ap.index(alter_AP_with_floor[i])
-            original_floor=altered_ap[index_of_altered_AP]['floor']
-            original_altered_RP=altered_ap[index_of_altered_AP]['altered RP']
-            original_user_locations=altered_ap[index_of_altered_AP]['User locations']
-            original_unaltered_RP=altered_ap[index_of_altered_AP]['Unchanged RP']
-
-            #print ("index of altered ap old :",index_of_altered_AP)
-            #print ("old floor:", original_floor)
-            #print (i)
-            '''
-            affected_location=[]
-            unaffected_location=[]
-            for j in range(len(Fingerprint_A)):
-                if alter_AP_with_floor[i] not in Fingerprint_A[j]:
-                    unaffected_location.append(RP_location[j])
-                else:
-                    affected_location.append(RP_location[j])
-            for j in range(len(affected_location)):
-                if affected_location[j] not in original_altered_RP:
-                    original_altered_RP.append(affected_location[j])
-            for j in range(len(unaffected_location)):
-                if unaffected_location[j] not in original_unaltered_RP:
-                    original_unaltered_RP.append(unaffected_location[j])
-            '''
-            # append user location list first
-            original_user_locations_list=[]
-            new_user_location=[]
-            for j in range(len(original_user_locations)):
-                old_location=[]
-                for k in range(len(original_user_locations[j])):
-                    float_location= float(original_user_locations[j][k])
-                    old_location.append(float_location)
-                original_user_locations_list.append(old_location)
-
-            #print(original_user_locations_list)
-            #for j in range(len(original_user_locations)):
-            #    original_user_locations_list.append(original_user_locations[i])
-
-            for j in range(len(original_user_locations_list)):
-                if final_estimation[0] == original_user_locations_list[j][0] and final_estimation[1] == original_user_locations_list[j][1]:
-                    break
-                else:
-                    if j == len(original_user_locations_list)-1:
-                        new_user_location.append(final_estimation)
-                    continue
-
-
-            #print(new_user_location)
-            #delete dictionary
-            
-            #find the altered ap and update the location
-            for j in range(len(new_user_location)):
-
-                altered_ap[index_of_altered_AP]['User locations'].append(new_user_location[j])
-                altered_ap[index_of_altered_AP]['floor']=original_floor
-
-            '''
-            dummy=dict({"altered ap mac":alter_AP_with_floor[i], "altered RP": original_altered_RP, "User locations": original_user_locations, "Unchanged RP": original_unaltered_RP})
+            inner_list=[]
+            inner_dummy=dict({"floor":floor, "location": final_estimation, "rssi_diff": chosen_altered_ap[i]['RSSI difference'], "original_rssi": chosen_altered_ap[i]['RSSI average']})
+            inner_list.append(inner_dummy)
+            dummy=dict({"Altered AP MAC": chosen_altered_ap[i]['Altered AP MAC'],"frequency": 1 , "Location": inner_list})
             altered_ap.append(dummy)
-            '''
-            #print (altered_ap)
+        else:
+            print( "already in")
+            index_of_altered_AP=All_altered_ap.index(chosen_altered_ap[i]['Altered AP MAC'])
+            original_frequency=int(altered_ap[index_of_altered_AP]['frequency'])
+            original_frequency+=1
+            altered_ap[index_of_altered_AP]['frequency']=original_frequency
+            original_Location=altered_ap[index_of_altered_AP]['Location'] #is a list of smaller dict
+            #print(original_Location)
+            # if it the previour is
+            #append to the old location
+            inner_dummy=dict({"floor":floor, "location": final_estimation, "rssi_diff": chosen_altered_ap[i]['RSSI difference'], "original_rssi": chosen_altered_ap[i]['RSSI average']})
+            original_Location.append(inner_dummy)
+            #print("original location ",original_Location)
 
-    #print(altered_ap[0]['altered ap mac'])
+
         
     #write
     f= open("alter_ap.txt", "w")
     for i in range(len(altered_ap)):
-        f.write(altered_ap[i]['altered ap mac'])
+
+        f.write(altered_ap[i]['Altered AP MAC'])
         f.write(': ')
-        f.write(str(altered_ap[i]['floor']))
+        f.write(str(altered_ap[i]['frequency']))
         f.write(' [')
 
-        for j in range(len(altered_ap[i]['altered RP'])):
-            #print(len(altered_ap[i]['altered RP']))
-
-            if len(altered_ap[i]['altered RP'][j]) !=1:
-
-                f.write('(')
-                #print(altered_ap[i]['altered RP'][j][0])
-                f.write(str(altered_ap[i]['altered RP'][j][0]))
+        for j in range(len(altered_ap[i]['Location'])):
+            #print(altered_ap[i]['Location'])
+            f.write('{')
+            f.write(altered_ap[i]['Location'][j]['floor'])
+            f.write('/(')
+            f.write(str(altered_ap[i]['Location'][j]['location'][0]))
+            f.write(';')
+            f.write(str(altered_ap[i]['Location'][j]['location'][1]))
+            f.write(')/')
+            f.write(str(altered_ap[i]['Location'][j]['rssi_diff']))
+            f.write('/')
+            f.write(str(altered_ap[i]['Location'][j]['original_rssi']))
+            f.write('}')
+            if j != len(altered_ap[i]['Location'])-1:
                 f.write(',')
-                f.write(str(altered_ap[i]['altered RP'][j][1]))
-                f.write(')')
-                if j != len(altered_ap[i]['altered RP'])-1:
-                    f.write(',')
-
-        f.write(']')
-
-        f.write(' [')
-
-        for j in range(len(altered_ap[i]['User locations'])):
-            if len(altered_ap[i]['User locations'][j]) !=1:
-                f.write('(')
-                #print(str(altered_ap[i]['User locations'][j][0]))
-                f.write(str(altered_ap[i]['User locations'][j][0]))
-                f.write(',')
-                f.write(str(altered_ap[i]['User locations'][j][1]))
-                f.write(')')
-                if j != len(altered_ap[i]['User locations'])-1:
-                    f.write(',')
-
-        f.write(']')
-        
-        f.write(' [')
-
-        for j in range(len(altered_ap[i]['Unchanged RP'])):
-            if len(altered_ap[i]['Unchanged RP'][j]) !=1:
-                f.write('(')
-                f.write(str(altered_ap[i]['Unchanged RP'][j][0]))
-                f.write(',')
-                f.write(str(altered_ap[i]['Unchanged RP'][j][1]))
-                f.write(')')
-                if j != len(altered_ap[i]['Unchanged RP'])-1:
-                    f.write(',')
 
         f.write(']')
         f.write('\n')
 
-    return final_estimation,alter_AP
+    return final_estimation
 

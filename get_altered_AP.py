@@ -1,129 +1,78 @@
 import os.path
+import user_voting
+import function_utils
 
 def get_altered_AP( mac_address ):
-        
+  
     f=open("alter_ap.txt","r")
-    altered_ap=[] #dictionary
+    altered_ap_=[] #dictionary
     for x in f:
-        #print(x)
         #make the list
         altered_ap_mac=''
-        floor=[]
-        altered_RP_location=[]
-        user_location=[]
-        unaltered_RP_location=[]
+        old_frequency =0
+        old_locations=[]
         i=0
         for w in x.split(' '):
             if i==0:
-                #print(w)
                 altered_ap_mac=w.replace(':','')
-
+                if not (altered_ap_mac == mac_address):
+                    continue
             elif i==1:
-                floor=w
-                #print(floor)
-            elif i==2:
-                #this is the altered RP location
-                cor1=w.replace('[','')
-                cor=cor1.replace(']','')
-                #print(cor)
-                for c in cor.split('),('):
-                    one_point1=c.replace('(', '')
-                    one_point=one_point1.replace(')', '')
-                    #print(one_point)
-                    corXY=[]
-                    for p in one_point.split(','):
-                        corXY.append(p)
-                    altered_RP_location.append(corXY)
-                #print(altered_RP_location)
-            
-            elif i==3:
-                #this is the altered RP location
-                cor1=w.replace('[','')
-                cor=cor1.replace(']','')
-                #print(cor)
-                for c in cor.split('),('):
-                    one_point1=c.replace('(', '')
-                    one_point=one_point1.replace(')', '')
-                    #print(one_point)
-                    corXY=[]
-                    for p in one_point.split(','):
-                        corXY.append(p)
-                    user_location.append(corXY)
-                #print(user_location)
+                old_frequency=w
 
-            elif i==4:
-                #this is the altered RP location
-                cor1=w.replace('[','')
-                cor2=cor1.replace('\n','')
-                cor=cor2.replace(']','')
-                #print(cor)
-                for c in cor.split('),('):
-                    one_point1=c.replace('(', '')
-                    one_point=one_point1.replace(')', '')
-                    #print(one_point)
-                    corXY=[]
-                    for p in one_point.split(','):
-                        corXY.append(p)
-                    unaltered_RP_location.append(corXY)
-                #print(unaltered_RP_location)
+            elif i==2:
+                col=w.replace('[','')
+                col1=col.replace(']','')
+                for c in col1.split(','):
+                    c1=c.replace('{','')
+                    c2=c1.replace('}','')
+                    old_floor=''
+                    old_one_location=[]
+                    old_RSSI_difference=0.0
+                    old_RSSI_averge=0.0
+                    j=0
+                    for a in c2.split('/'):
+                        if j==0: #floor
+                            old_floor=a
+                        elif j==1: #location
+                            a1=a.replace('(','')
+                            a2=a1.replace(')','')
+                            for b in a2.split(';'):
+                                old_one_location.append(float(b))
+                        elif j==2: #RSSI difference
+                            old_RSSI_difference=float(a)
+
+                        elif j ==3:
+                            old_RSSI_averge=float(a)
+                        j=j+1
+                    inner_dummy=dict({"floor": old_floor, "location": old_one_location, "rssi_diff": old_RSSI_difference, "original_rssi": old_RSSI_averge})
+                    old_locations.append(inner_dummy)
 
             i=i+1
-        dummy=dict({"floor": floor , "altered ap mac":altered_ap_mac, "altered RP": altered_RP_location, "User locations": user_location, "Unchanged RP": unaltered_RP_location})
-        altered_ap.append(dummy)
+        dummy=dict({"Altered AP MAC": altered_ap_mac, "frequency": old_frequency, "Location":old_locations})
+
+        altered_ap_.append(dummy)
     #print (altered_ap)
-    #print (V)
     f.close()
 
+    altered_ap = user_voting.user_voting(altered_ap_)
+    # break_result = function_utils.Jenks_natural_breaks(altered_ap_, "Altered AP MAC", "frequency")
+    # altered_ap = break_result[1]
+
     #return four things
-    floor=''
-    changed_RP=[]
+    #floors=[]
+    #location=[]
+    #rssi_diff=[]
+    #original_rssi=[]
     location=[]
-    unchanged_RP=[]
 
     for i in range(len(altered_ap)):
-        #print(altered_ap[i]['altered ap mac'])
-        if altered_ap[i]['altered ap mac'] == mac_address:
+        #print(altered_ap[i]['floor'])
+        if altered_ap[i]['Altered AP MAC'] == mac_address:
+            for j in range(len(altered_ap[i]['Location'])):
+
+                dummy=dict({"floor": altered_ap[i]['Location'][j]['floor'], "location": altered_ap[i]['Location'][j]['location'], "rssi_diff":altered_ap[i]['Location'][j]['rssi_diff'], "original_rssi": altered_ap[i]['Location'][j]['original_rssi']})
+                location.append(dummy)
 
 
-            #construct dictionary
-            floor=altered_ap[i]['floor']
-            
-            #changed_RP=altered_ap[i]['altered RP']
-            for j in range(len(altered_ap[i]['altered RP'])):
-                if altered_ap[i]['altered RP'][j][0] != '':
-
-                    dummy=dict({'x':float(altered_ap[i]['altered RP'][j][0]), 'y':float(altered_ap[i]['altered RP'][j][1])})
-                    changed_RP.append(dummy)
-                #else:
-                    #dummy=dict({'x':None, 'y':None})
-                #    dummy=None 
-                #changed_RP.append(dummy)
-
-            
-            #location=altered_ap[i]['User locations'] 
-
-            for j in range(len(altered_ap[i]['User locations'])):
-                if altered_ap[i]['User locations'][j][0] != '':
-
-                    dummy=dict({'x':float(altered_ap[i]['User locations'][j][0]), 'y':float(altered_ap[i]['User locations'][j][1])})
-                    location.append(dummy)
-
-                #else:
-                    #dummy=dict({'x':None, 'y':None})
-                #    dummy=None
-                #location.append(dummy)
-            #unchanged_RP=altered_ap[i]['Unchanged RP']
-
-            for j in range(len(altered_ap[i]['Unchanged RP'])):
-                if altered_ap[i]['Unchanged RP'][j][0] != '':
-
-                    dummy=dict({'x':float(altered_ap[i]['Unchanged RP'][j][0]), 'y':float(altered_ap[i]['Unchanged RP'][j][1])})
-                    unchanged_RP.append(dummy)
-                #else:
-                    #dummy=dict({'x':None, 'y':None})
-                #    dummy=None
-                #unchanged_RP.append(dummy)
-
-
-
-    return floor, changed_RP, location, unchanged_RP
+    return location

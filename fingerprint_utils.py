@@ -60,5 +60,3 @@ def load_fingerprint(json_from_request):
         fingerprint_As.append(rp_address)
         fingerprint_Vs.append(rp_rssi)
     return rp_locations, fingerprint_As, fingerprint_Vs, A_uppercase, V, floor
-
-
