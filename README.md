@@ -15,7 +15,7 @@ This is the documentation of the LAAFU system, which contains: **Localization wi
 - get_altered_AP_list.py: used to get only the mac address for all altered AP for app.py. 
 - get_distinct_location.py: used to get all the infrormation where we find altered AP for app.py.
 - (all the return velue will be sent to app.py, and sent to visualization tool for further use.)
-- localization.py: which contains all the localzation steps where we take the user's signal vectors from app.py and fingerprint database information from fingerprint_utils.py, and send back the estimated user location to app.py, and store the altered AP information in altered_ap.txt.
+- localization.py: which contains all the localzation woth altered AP and the altered AP identification steps where we take the user's signal vectors from app.py and fingerprint database information from fingerprint_utils.py, and send back the estimated user location to app.py, and store the altered AP information in altered_ap.txt.
 - requirements.txt: if the server want to know the version of the flask server for configeration, please type in this txt file.
 - user_voting.py: do the user voting for returning the altered AP information. For each request for requesting altered APs information, we do the user voting once.
 - whereami_utils.py: present the data for calculating the actual distance for storing the altered AP information.
