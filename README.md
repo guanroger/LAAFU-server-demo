@@ -6,8 +6,8 @@ This is the documentation of the LAAFU system, which contains: **Localization wi
 ## Content
 ### Files and Folders
 
-- fingerprint folder: fingerprint database files collected by Gary Cheng. 
-- loc.txt: location of all RPs
+- fingerprint folder: fingerprint database files collected by Gary Cheng, which contend all the fingerprint database used for server localization and altered AP identification.
+- altered_ap.txt: store the information for detected altered ap after each localization. It contains the estimated locations where we find particular altered AP, floor, rssi_average, and rssi_difference.
 - resX: folder containing all APs' map from points to RSSIs. They will be used in visualizing
 - paraX: folder containing all APs' GP parameters. They are currently used for restoring APs' location
 - output_X\all_xxxxx.txt: file of one AP containing AP location, RSSI error among all RPs and corresponding std
